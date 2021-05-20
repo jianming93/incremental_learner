@@ -1,0 +1,17 @@
+#remove-class-help-button {
+    padding: 0px;
+    background-color: rgba(0, 0, 0, 0);
+    border: 0px;
+    margin-left: 10px;
+    width: 20px;
+    height: 20px;
+}
+
+#remove-class-help-button:hover {
+    cursor: pointer;
+}
+
+#remove-class-help-img {
+    width: 15px;
+    height: 15px;
+}

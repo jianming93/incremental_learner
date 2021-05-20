@@ -1,0 +1,36 @@
+.nav-card {
+    border: 2px solid rgb(97, 97, 97);
+    border-radius: 0px;
+    background-color: rgb(220, 220, 220);
+    min-height: 50vh;
+}
+
+.nav-card:hover {
+    cursor: pointer;
+}
+
+.card-img {
+    width: 50%;
+    height: 50%;
+}
+
+.card-nav-button {
+    width: 100%;
+}
+
+.home-jumbotron {
+    background: url('home-jumbotron-background.jpg');
+    background-size: cover;
+    opacity: 1;
+    min-height: 90vh;
+    color: rgba(255, 255, 255, 0.795);
+}
+
+.info-jumbotron {
+    /* background: url('info-jumbotron-background.jpg');
+    background-size: cover;
+    opacity: 0.8; */
+    min-height: 90vh;
+    background-color: rgb(230, 230, 230);
+    border-radius: 0px;
+}
