@@ -2,6 +2,7 @@ import os
 import shutil
 import io
 import base64
+import pickle
 from zipfile import ZipFile
 
 from dash_bootstrap_components._components.Col import Col
@@ -10,9 +11,13 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import dash_table
+import tqdm
+import numpy as np
 
 from server import app, shell_family, config
 from src.utils import ImageGenerator
+from sql_app.crud import get_all_shells_by_shell_family_id, bulk_create_images, bulk_create_shell_images_for_one_shell_family, create_shell_for_shell_family
+from sql_app.database import SessionLocal, engine
 
 
 help_modal = dbc.Modal(
@@ -165,7 +170,7 @@ def generate_uploaded_zip_file_summary(content, name, date):
         zip_obj = ZipFile(zip_str, 'r')
         classes_folder_list = [x for x in zip_obj.namelist() if x.endswith('/')][1:]
         # Populate table
-        current_classes_in_model = os.listdir(config['environment']['save_image_directory'])
+        current_classes_in_model = os.listdir(config['dash_environment']['save_image_directory'])
         file_counter = []
         for folder in classes_folder_list:
             file_counter.append({"class-name-column": folder.split('/')[1],
@@ -202,24 +207,25 @@ def add_class_to_model(n_clicks, content, name, date):
             zip_obj = ZipFile(zip_str, 'r')
             # Extract files
             classes_folder_list = [x for x in zip_obj.namelist() if x.endswith('/')][1:]
-            current_classes_in_model = os.listdir(config['environment']['save_image_directory'])
+            current_classes_in_model = os.listdir(config['dash_environment']['save_image_directory'])
             # Need class_name_array, class_index_array and image_path_array
             # class_name_array stores the unique classes present
             # class_index_array stores the class index for each image. Index goes by the class folder list
             # image_path_array stores the image path after copying to the backend which is determined
-            # by config['environment']['save_image_directory']
-            class_name_array = []
+            # by config['dash_environment']['save_image_directory']
+            unique_class_name_array = []
             class_index_array = []
+            class_name_array = []
             image_path_array = []
             for i in range(len(classes_folder_list)): 
                 folder = classes_folder_list[i]
                 class_name = folder.split('/')[1]
                 class_name = class_name.lower()
                 if class_name not in current_classes_in_model:
-                    os.mkdir(os.path.join(config['environment']['save_image_directory'], class_name))
-                if class_name not in class_name_array:
-                    class_name_array.append(class_name)
-                save_path = os.path.join(config['environment']['save_image_directory'], class_name)
+                    os.mkdir(os.path.join(config['dash_environment']['save_image_directory'], class_name))
+                if class_name not in unique_class_name_array:
+                    unique_class_name_array.append(class_name)
+                save_path = os.path.join(config['dash_environment']['save_image_directory'], class_name)
                 all_class_image_paths = [x for x in zip_obj.namelist() if x.startswith(folder)][1:]
                 for class_image_path in all_class_image_paths:
                     class_filename = os.path.basename(class_image_path)
@@ -227,15 +233,56 @@ def add_class_to_model(n_clicks, content, name, date):
                         save_image_file.write(zip_obj.read(class_image_path))
                     image_path_array.append(os.path.join(save_path, class_filename))
                     class_index_array.append(i)
+                    class_name_array.append(class_name)
+            # all_dataset_image_features = np.array([])
+            # all_image_paths = []
+            # all_classes = []
             # Use image_path_array and class_index_array for image generator
             # Create image generator
-            image_generator = ImageGenerator(image_path_array, class_index_array, config['model']['batch_size'], (config['model']['target_size'], config['model']['target_size']))
-            shell_family.fit(image_generator, class_name_array, config['model']['model_path'])
+            # image_generator = ImageGenerator(image_path_array, class_index_array, config['model']['batch_size'], (config['model']['target_size'], config['model']['target_size']))
+            # for (batch_images, batch_filepaths, batch_classes) in tqdm.tqdm(image_generator, total=int(np.ceil(len(image_generator) / config['model']['batch_size']))):
+            #     features = shell_family.preprocessor.predict(batch_images)
+            #     if all_dataset_image_features.shape[0] == 0:
+            #         all_dataset_image_features = np.array(features)
+            #     else:
+            #         all_dataset_image_features = np.concatenate(
+            #             [
+            #                 all_dataset_image_features,
+            #                 features
+            #             ],
+            #             axis=0,
+            #         )
+            #     all_image_paths += list(batch_filepaths)
+            #     all_classes += [unique_class_name_array[i] for i in batch_classes]
+            # shell_family.fit(image_generator, unique_class_name_array, config['model']['model_path'])
+            # Save to database
+            app.logger.info('Adding new classes/existing classes images and metadata to database..')
+            db = SessionLocal()
+            # Add images to database
+            create_images_result = bulk_create_images(db, class_name_array, image_path_array)
+            # Check for current shells existing in shell family
+            all_shells_for_shell_family_id_result = get_all_shells_by_shell_family_id(db, shell_family.shell_family_id)
+            # Remove overlaps if present
+            if len(all_shells_for_shell_family_id_result) == 0:
+                class_to_add = unique_class_name_array
+            else:
+                database_shell_ids = [all_shells_for_shell_family_id_result[i].shell_id for i in range(len(all_shells_for_shell_family_id_result))]
+                # Find difference to add to database
+                class_to_add = list(set(unique_class_name_array).difference(database_shell_ids))
+                app.logger.info('Found following new shells to add to database: {}'.format(class_to_add))
+            # Add shell ids to database
+            for new_class in class_to_add:
+                create_shell_for_shell_family(db, config['model']['shell_family_id'], new_class, None, None, None, None)
+            # Assign images to shell fmaily and shell id 
+            assign_to_shell_family_and_shells_result = bulk_create_shell_images_for_one_shell_family(db, shell_family.shell_family_id, class_name_array, image_path_array, [None for i in range(len(image_path_array))])
+            db.close()
+            app.logger.info('Successfully added to database!') 
             # Close zip file when done
             zip_obj.close()
-            app.logger.info('Successfully added/updated new images with the following classes: {}'.format(class_name_array))
+            app.logger.info('Successfully added/updated new images with the following classes: {}'.format(unique_class_name_array))
             return True, False
-        except:
+        except Exception as e:
+            app.logger.info(e)
             app.logger.info('Error in adding new classes!')
             return False, True
     else:

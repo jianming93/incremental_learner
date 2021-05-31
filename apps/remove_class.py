@@ -5,6 +5,8 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 
 from server import app, shell_family
+from sql_app.crud import delete_all_shell_images_by_shell_family_id_and_shell_id, delete_shell_for_shell_family
+from sql_app.database import SessionLocal, engine
 
 def load_layout():
     help_modal = dbc.Modal(
@@ -142,10 +144,16 @@ def open_confirm_remove_class_modal(n_clicks_remove_class, n_clicks_confirm, n_c
 def remove_class(n_click, class_to_remove):
     if n_click > 0:
         try:
-            shell_family.delete_class(class_to_remove)
+            # shell_family.delete_class(class_to_remove)
+            # Delete from database
+            db = SessionLocal()
+            delete_shell_images_results = delete_all_shell_images_by_shell_family_id_and_shell_id(db, shell_family.shell_family_id, class_to_remove)
+            delete_shell_results = delete_shell_for_shell_family(db, shell_family.shell_family_id, class_to_remove)
+            db.close()
             app.logger.info('Successfully deleted the following class: {}'.format(class_to_remove))
             return True, False, [{"label": i, "value": i} for i in shell_family.classifiers.keys()]
-        except:
+        except Exception as e:
+            app.logger.info(e)
             app.logger.info('Error in deleting the following class: {}'.format(class_to_remove))
             return False, True, [{"label": i, "value": i} for i in shell_family.classifiers.keys()]
     else:

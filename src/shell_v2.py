@@ -32,13 +32,14 @@ class ShellModel:
     """Creates a shell for one class mean.
     """
     def __init__(self):
-        self.parameters = None
+        self.shell_id = None
         self.raw_features = None
         self.shell_mean = None
         self.num_instances = None
         self.noise_mean = None
         self.noise_std = None
-        self.mean_norm = 0
+        self.created_at = None
+        self.updated_at = None
 
     def fit(self, global_mean):
         """Generate the shell parameters based on the global mean the shell family currently sees
@@ -100,11 +101,11 @@ class ShellFamily():
         self.classifiers = OrderedDict()
         self.feature_extractor_model = None
         self.preprocessor = None
-        self.shell_file = None
         self.global_mean = None
-        self.weighted_mean = None
         self.instances = 0
         self.mapping = []
+        self.created_at = None
+        self.updated_at = None
 
     def create_preprocessor(self, feature_extractor_model):
         if feature_extractor_model in ACCEPTED_PREPROCESSORS:
@@ -134,13 +135,12 @@ class ShellFamily():
         self.feature_extractor_model = shell_family_configuration['feature_extractor_model']
         self.mapping = shell_family_configuration['mapping']
         self.global_mean = shell_family_configuration['global_mean']
-        self.weighted_mean = shell_family_configuration['weighted_mean']
         self.instances = shell_family_configuration['instances']
         self.shell_file = shell_file
         self.create_preprocessor(self.feature_extractor_model)
 
 
-    def fit(self, data_generator, raw_mapping, output_datafile):
+    def fit(self, data_generator, raw_mapping):
         """To be used when creating an entire new family of shells
         """
         # Generate empty shell if needed
@@ -151,6 +151,7 @@ class ShellFamily():
         # Extract features and prepare for shell creation
         for data in data_generator:
             images = data[0]
+            filepaths = data[1]
             classes = data[2]
             unique_classes = np.unique(classes)
             for class_index in unique_classes:
@@ -164,7 +165,6 @@ class ShellFamily():
                                                axis=0,
                                                keepdims=True)
                 else:
-                    ### TODO: Use weighted mean to calculate the new mean ###
                     self.global_mean = np.mean(
                         np.concatenate(
                             [
@@ -190,8 +190,8 @@ class ShellFamily():
                                         class_features])
         # Create shells from features
         self.update_shells(self.global_mean)
-        self.save(output_datafile)
-        self.shell_file = output_datafile
+        # self.save(output_datafile)
+        # self.shell_file = output_datafile
     
     def update_shells(self, global_mean):
         for shell_name in self.classifiers:
@@ -243,7 +243,6 @@ class ShellFamily():
                      'feature_extractor_model': self.feature_extractor_model,
                      'mapping': self.mapping,
                      'global_mean': self.global_mean,
-                     'weighted_mean': self.weighted_mean,
                      'instances': self.instances}
         with open(output_filename, "wb") as data_file:
             pickle.dump(save_data, data_file)

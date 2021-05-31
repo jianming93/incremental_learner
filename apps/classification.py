@@ -1,5 +1,8 @@
 import io
+import os
 import base64
+import pickle
+import datetime
 from PIL import Image
 
 import numpy as np
@@ -11,6 +14,8 @@ import dash_table
 from dash.dependencies import Input, Output, State
 
 from server import app, shell_family, config
+from sql_app.crud import create_image, create_shell_images
+from sql_app.database import SessionLocal, engine
 
 
 help_modal = dbc.Modal(
@@ -164,10 +169,18 @@ def generate_uploaded_zip_file_summary(content, name, date):
             output_results = []
             for class_name, distance in zip(sorted_class_names, sorted_scores_list):
                 output_results.append({'class-name-column': class_name, 'distance-column': abs(distance)})
+            # Copy image to best match folder
+            save_path = os.path.join(config['dash_environment']['save_image_directory'], sorted_class_names[0], name)
+            img.save(save_path)
             ### TODO: Add thresholding and model updates here ###
+            db = SessionLocal()
+            create_image_result = create_image(db, sorted_class_names[0], save_path)
+            create_shell_images_result = create_shell_images(db, shell_family.shell_family_id, sorted_class_names[0], save_path, pickle.dumps(sample_features[0]), datetime.datetime.utcnow())
+            db.close()
             app.logger.info('Successfully perform classification!')
             return content, output_results, False
-        except:
+        except Exception as e:
+            app.logger.info(e)
             app.logger.info('Error in performing classification!')
             return None, None, True
     else:

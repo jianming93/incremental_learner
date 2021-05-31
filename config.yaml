@@ -1,13 +1,27 @@
-environment:
+dash_environment:
   host: 0.0.0.0
   port: 8000
-  debug: true
+  debug: false
   use_cpu: true
   save_image_directory: images/
 
+task_app_environment:
+  host: 0.0.0.0
+  port: 7000
+  debug: false
+  use_cpu: true
+  seconds_interval: 10
+
+database:
+  username: mitb
+  password: mitb-il-2021
+  host: postgresql
+  port: 5432
+  database_name: incremental_learner
+
 model:
-  model_path: models/ver1.pkl
+  shell_family_id: learner_1
   feature_extractor_model: resnet50
-  batch_size: 2048
+  batch_size: 1024
   target_size: 224
   threshold:

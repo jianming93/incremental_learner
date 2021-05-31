@@ -40,14 +40,14 @@ class ImageGenerator():
         if self.index == self.__len__():
             raise StopIteration
         elif self.index + self.batch_size >= self.__len__():
-            batch_filepaths = self.filepath_array[self.index : self.__len__()]
+            batch_filepaths = np.array(self.filepath_array[self.index : self.__len__()])
             batch_images = np.array([np.asarray(Image.open(i).convert("RGB").resize(self.target_size))[..., :3] for i in batch_filepaths]).astype(np.float32)
             batch_images = preprocess_input(batch_images)
             batch_classes = self.class_array[self.index : self.__len__()]
             self.index = self.__len__()
             return (batch_images, batch_filepaths, batch_classes)
         else:
-            batch_filepaths = self.filepath_array[self.index : self.index + self.batch_size]
+            batch_filepaths = np.array(self.filepath_array[self.index : self.index + self.batch_size])
             batch_images = np.array([np.asarray(Image.open(i).convert("RGB").resize(self.target_size))[..., :3] for i in batch_filepaths]).astype(np.float32)
             batch_images = preprocess_input(batch_images)
             batch_classes = self.class_array[self.index : self.index + self.batch_size]
@@ -203,5 +203,48 @@ def class_and_outliers(gt, trueClass, outlierPercentage, outlierClassList=[]):
     return finalMask
 
 
-
+def update_global_mean_and_shell_mean(self, data_generator, raw_mapping):
+    """To be used for updating shells
+    """
+    # Extract features and prepare for shell creation
+    for data in data_generator:
+        images = data[0]
+        filepaths = data[1]
+        classes = data[2]
+        unique_classes = np.unique(classes)
+        for class_index in unique_classes:
+            # Generate class features
+            indexes = np.where(classes == class_index)
+            target_images = images[indexes]
+            # Update shell family params
+            if self.global_mean is None:
+                self.global_mean = np.mean(class_features,
+                                            axis=0,
+                                            keepdims=True)
+            else:
+                self.global_mean = np.mean(
+                    np.concatenate(
+                        [
+                            np.repeat(
+                                self.global_mean,
+                                self.instances,
+                                axis=0
+                            ),
+                            class_features
+                        ]
+                    ),
+                    axis=0,
+                    keepdims=True
+                )
+            self.instances += class_features.shape[0]
+            class_name = raw_mapping[class_index]
+            # Append raw features to classifiers
+            if self.classifiers[class_name].raw_features is None:
+                self.classifiers[class_name].raw_features = class_features
+            else:
+                self.classifiers[class_name].raw_features =\
+                    np.concatenate([self.classifiers[class_name].raw_features,
+                                    class_features])
+    # Create shells from features
+    self.update_shells(self.global_mean)
 

@@ -1,0 +1,84 @@
+version: '2'
+
+networks:
+    app-tier:
+      driver: bridge
+
+services:
+  nginx-proxy:
+    container_name: nginx-proxy
+    image: jwilder/nginx-proxy
+    ports:
+        - '80:80'
+    volumes:
+        # - /var/run/docker.sock:/tmp/docker.sock.ro
+        - ./nginx/nginx-proxy.conf:/etc/nginx/conf.d/nginx-proxy.conf
+        - ./nginx/network_internal.conf:/etc/nginx/network_internal.conf
+        # - ./nginx/.htpasswd:/etc/nginx/.htpasswd
+    networks:
+        - app-tier
+
+  dash:
+    container_name: dash
+    build:
+      context: .
+      dockerfile: dockerfiles/dash_app.Dockerfile
+    depends_on: 
+      postgresql:
+        condition: service_healthy
+    ports:
+        - '8000:8000'
+    networks:
+        - app-tier
+    volumes:
+        - ./images:/app/images
+
+  task-app:
+    container_name: task-app
+    build:
+      context: .
+      dockerfile: dockerfiles/task_app.Dockerfile
+    depends_on: 
+      postgresql:
+        condition: service_healthy
+    ports:
+        - '7000:7000'
+    networks:
+        - app-tier
+
+
+  postgresql:
+    container_name: postgresql
+    image: docker.io/bitnami/postgresql:11
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./postgresql_data:/bitnami/postgresql
+    environment:
+      - 'POSTGRESQL_USERNAME=mitb'
+      - 'POSTGRESQL_PASSWORD=mitb-il-2021'
+      - 'POSTGRESQL_DATABASE=incremental_learner'
+    networks:
+        - app-tier
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mitb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    ports:
+        - '9000:80'
+    networks:
+        - app-tier
+    environment:
+        - 'PGADMIN_DEFAULT_EMAIL=jianming.ng.2019@mitb.smu.edu.sg'
+        - 'PGADMIN_DEFAULT_PASSWORD=mitb-il-2021'
+
+volumes:
+    images:
+        driver: local
+    postgresql_data:
+        driver: local
