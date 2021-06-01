@@ -31,6 +31,16 @@ with open('config.yaml') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 ### Set Logging Level ###
 logging.basicConfig(level=logging.DEBUG)
+### Create log file handler ###
+if not os.path.isfile(config['task_app_environment']['log_filepath']):
+    directory_name = os.path.dirname(config['task_app_environment']['log_filepath'])
+    if not os.path.isdir(directory_name):
+        os.makedirs(directory_name)
+    with open(config['task_app_environment']['log_filepath'], 'w') as fp:
+        pass
+handler = logging.FileHandler(config['task_app_environment']['log_filepath'])
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+handler.setFormatter(formatter)
 
 def update_shells_in_database():
     db = SessionLocal()
@@ -178,6 +188,7 @@ sched.add_job(update_shells_in_database,'interval', seconds=config['task_app_env
 sched.start()
 
 app = Flask(__name__)
+app.logger.addHandler(handler)
 
 @app.route("/test")
 def test():

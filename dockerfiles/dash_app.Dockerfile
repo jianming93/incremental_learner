@@ -10,7 +10,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN mkdir images
+RUN mkdir {images, logs}
 
 EXPOSE 8000
 

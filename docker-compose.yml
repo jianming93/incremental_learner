@@ -32,6 +32,7 @@ services:
         - app-tier
     volumes:
         - ./images:/app/images
+        - ./logs:/app/logs
 
   task-app:
     container_name: task-app
@@ -45,6 +46,9 @@ services:
         - '7000:7000'
     networks:
         - app-tier
+    volumes:
+      - ./images:/app/images
+      - ./logs:/app/logs
 
 
   postgresql:
@@ -79,6 +83,8 @@ services:
 
 volumes:
     images:
+        driver: local
+    logs:
         driver: local
     postgresql_data:
         driver: local

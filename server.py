@@ -31,6 +31,19 @@ app.logger.info('Starting app...')
 with open('config.yaml') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
+### Create log file handler ###
+if not os.path.isfile(config['task_app_environment']['log_filepath']):
+    directory_name = os.path.dirname(config['task_app_environment']['log_filepath'])
+    if not os.path.isdir(directory_name):
+        os.makedirs(directory_name)
+    with open(config['task_app_environment']['log_filepath'], 'w') as fp:
+        pass
+handler = logging.FileHandler(config['dash_environment']['log_filepath'])
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+handler.setFormatter(formatter)
+
+app.logger.addHandler(handler)
+
 ### Set Environment ###
 if config['dash_environment']['use_cpu']:
     app.logger.info("Disabling GPU")

@@ -10,6 +10,8 @@ COPY . /app
 
 WORKDIR /app
 
+RUN mkdir {images, logs}
+
 EXPOSE 7000
 
 ENTRYPOINT [ "python" ]

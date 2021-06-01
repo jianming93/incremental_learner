@@ -4,6 +4,7 @@ dash_environment:
   debug: false
   use_cpu: true
   save_image_directory: images/
+  log_filepath: logs/dash_app.log
 
 task_app_environment:
   host: 0.0.0.0
@@ -11,6 +12,7 @@ task_app_environment:
   debug: false
   use_cpu: true
   seconds_interval: 10
+  log_filepath: logs/task_app.log
 
 database:
   username: mitb
