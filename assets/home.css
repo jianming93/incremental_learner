@@ -1,3 +1,8 @@
+.home-page-header {
+    font-weight: 500;
+    text-align: center;
+}
+
 .nav-card {
     border: 2px solid rgb(97, 97, 97);
     border-radius: 0px;
@@ -29,8 +34,35 @@
 .info-jumbotron {
     /* background: url('info-jumbotron-background.jpg');
     background-size: cover;
-    opacity: 0.8; */
+    opacity: 0.5; */
     min-height: 90vh;
     background-color: rgb(230, 230, 230);
     border-radius: 0px;
+    position: relative;
+    z-index: 1;
+}
+
+.info-jumbotron::after {
+    content: "";
+    background: url('info-jumbotron-background.jpg');
+    background-size: cover;
+    opacity: 0.5;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    z-index: -1;   
+}
+
+
+#home-page-info-area {
+    background-color: rgba(78, 78, 78, 0.5);
+    color: white;
+    height: 100%;
+    z-index: 2;
+}
+
+.info-text-content {
+    padding: 10px 20px
 }

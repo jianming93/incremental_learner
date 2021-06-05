@@ -1,4 +1,5 @@
 import pickle
+from collections import OrderedDict
 
 from dash_bootstrap_components._components.NavLink import NavLink
 import dash_core_components as dcc
@@ -87,6 +88,8 @@ def update_shell_family(n_interval):
             # Extract shells from database baased on shell_family_id
             get_shell_family_shells_database_results = get_all_shells_by_shell_family_id(db, shell_family.shell_family_id)
             if get_shell_family_shells_database_results:
+                # Delete all old shells
+                shell_family.classifiers = OrderedDict()
                 # Get all shell ids and query
                 for shell_details in get_shell_family_shells_database_results:
                     shell_family.classifiers[shell_details.shell_id] = shell_v2.ShellModel()

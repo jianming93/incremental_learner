@@ -9,10 +9,10 @@ title_jumbotron = dbc.Jumbotron(
     [
         dbc.Container(
             [
-                html.H1("MITB Incremental Learning", className="display-2 d-flex justify-content-center"),
+                html.H1("MITB Incremental Learning", className="display-2 d-flex justify-content-center home-page-header"),
                 html.P(
                     "Project by Prof Daniel Lin and Ng Jian Ming",
-                    className="lead d-flex justify-content-center",
+                    className="lead d-flex justify-content-center home-page-header",
                     id="home-page-content"
                 ),
                 # html.Hr(),
@@ -29,13 +29,38 @@ info_jumbotron = dbc.Jumbotron(
     [
         dbc.Container(
             [
-                html.H1("About", className="display-5 d-flex"),
-                html.P(
-                    "The incremental learner aims to explore how to quickly adopt to different "
-                    "classes",
-                    className="lead d-flex",
-                    id="home-page-content"
-                ),
+                html.Div(
+                    [
+                        html.H1("About", className="display-5 d-flex info-text-content"),
+                        html.P(
+                            "The incremental learner aims to explore how to quickly adopt to different "
+                            "classes. By using any form of feature extractor for example a Convolutional "
+                            "Neural Network (CNN), we can collect these data points to form an entity called shell. "
+                            "Every class in this system has this shell which has a centroid based off the mean of "
+                            "the features the system has seen before and a 'boundary' based off the median euclidean distance of "
+                            "the seen features from this centroid. During inference, the model upon prediction can easily add "
+                            "the newly classified image's features to the closest shell it belongs to and perform the same operations "
+                            "to update the system. This allows for a scalable system that does not need any computationally intensive "
+                            "retraining like traditional machine learning models.",
+                            className="lead d-flex info-text-content",
+                            id="home-page-content-1"
+                        ),
+                        html.P(
+                            "Currently there are 3 actions performable for this system, namely "
+                            "Classification, Add Class and Delete Class. Classification allows "
+                            "upload of an image to perform classification. Based on the best score "
+                            "(the smallest number shownn in the table) it will assign that uploaded image to the shell " 
+                            "and perform the update on the backend. Add Class allows an upload of a zip file. "
+                            "This zip file should container a root folder with sub-folders named after the class "
+                            "one desires to add to the system where images of the respective classes are present "
+                            "in these sub-folders. Lastly, Delete Class removes the class entirely from the system for "
+                            "the current system. Likewise, the removal will also occur in the backend.",
+                            className="lead d-flex info-text-content",
+                            id="home-page-content-2"
+                        ),
+                    ],
+                    id="home-page-info-area",
+                ) 
             ],
             fluid=True,
         )

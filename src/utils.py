@@ -54,6 +54,43 @@ class ImageGenerator():
             self.index += self.batch_size
             return (batch_images, batch_filepaths, batch_classes)
 
+
+
+##########################
+# ImageGeneratorV2 Class #
+##########################
+# ImageGeneratorV2 is for shell_v2 purpose
+class ImageGeneratorV2():
+    def __init__(self, filepath_array, batch_size, target_size):
+        self.filepath_array = filepath_array
+        self.batch_size = batch_size
+        self.target_size = target_size
+        self.steps = int(np.math.ceil(len(self.filepath_array) / self.batch_size))
+        self.index = 0
+    
+    def __iter__(self):
+        return self
+    
+    def __len__(self):
+        return len(self.filepath_array)
+    
+    def __next__(self):
+        if self.index == self.__len__():
+            raise StopIteration
+        elif self.index + self.batch_size >= self.__len__():
+            batch_filepaths = np.array(self.filepath_array[self.index : self.__len__()])
+            batch_images = np.array([np.asarray(Image.open(i).convert("RGB").resize((self.target_size, self.target_size)))[..., :3] for i in batch_filepaths]).astype(np.float32)
+            batch_images = preprocess_input(batch_images)
+            self.index = self.__len__()
+            return (batch_images, batch_filepaths)
+        else:
+            batch_filepaths = np.array(self.filepath_array[self.index : self.index + self.batch_size])
+            batch_images = np.array([np.asarray(Image.open(i).convert("RGB").resize((self.target_size, self.target_size)))[..., :3] for i in batch_filepaths]).astype(np.float32)
+            batch_images = preprocess_input(batch_images)
+            self.index += self.batch_size
+            return (batch_images, batch_filepaths)
+
+
 ##########################
 # Preprocessing Features #
 ##########################

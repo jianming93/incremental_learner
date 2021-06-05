@@ -1,10 +1,14 @@
 from PIL import Image
 import pickle
+import os
+import sys
+sys.path.append(os.getcwd())
 
 import numpy as np
 from sqlalchemy import and_, or_, not_, desc
 from sqlalchemy.orm import Session
 from . import models, schemas
+from src.utils import ImageGeneratorV2
 
 #####################
 # Shell Family CRUD #
@@ -170,15 +174,32 @@ def bulk_create_shell_images_for_one_shell_family(db: Session, shell_family_id: 
     return True
 
 
-def update_all_shell_images_by_shell_family_id_and_shell_id_with_no_image_features(db: Session, shell_family_id: str, shell_id: str, shell_family, target_size: int, update_datetime):
+def update_all_shell_images_by_shell_family_id_and_shell_id_with_no_image_features(db: Session, shell_family_id: str, shell_id: str, shell_family, batch_size: int, target_size: int, update_datetime):
     shell_images_to_update = db.query(models.ShellImages).filter(
         and_(
             models.ShellImages.shell_family_id == shell_family_id,
             models.ShellImages.shell_id == shell_id,
             models.ShellImages.image_features.is_(None)
         )).all()
-    for shell_image in shell_images_to_update:
-        shell_image.image_features = image_path_to_image_features(shell_image.image_path, shell_family, target_size)
+    all_shell_image_paths = [shell_image.image_path for shell_image in shell_images_to_update]
+    all_images_features = np.array([])
+    image_generator = ImageGeneratorV2(all_shell_image_paths, batch_size, target_size)
+    for (batch_images, batch_filepaths) in image_generator:
+        images_features = shell_family.preprocessor.predict(batch_images)
+        if all_images_features.shape[0] == 0:
+            all_images_features = images_features
+        else:
+            all_images_features = np.concatenate(
+                [
+                    all_images_features,
+                    images_features
+                ],
+                axis=0,
+            )
+    for i in range(len(shell_images_to_update)):
+        shell_image = shell_images_to_update[i]
+        shell_image_feature = all_images_features[i]
+        shell_image.image_features = pickle.dumps(shell_image_feature)
         shell_image.assigned_at = update_datetime
     db.commit()
     return True
@@ -254,3 +275,4 @@ def image_path_to_image_features(image_path, shell_family, target_size):
         preprocessed_img_array = shell_family.preprocessor_preprocess_function(expanded_resized_img_array)
         sample_features = shell_family.preprocessor.predict(preprocessed_img_array)
     return pickle.dumps(sample_features[0])
+

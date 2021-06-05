@@ -56,56 +56,42 @@ if config['model']['shell_family_id'] is None:
 
 get_shell_family_result = get_shell_family_by_shell_family_id(db, config['model']['shell_family_id'])
 if not get_shell_family_result:
-    app.logger.info('Creating new model with the following preprocessor: {}'.format(config['model']['feature_extractor_model']))
-    shell_family.create_preprocessor(config['model']['feature_extractor_model'])
-    app.logger.info('Inserting shell family with shell_family_id = {} and feature_extractor_model = {} into database'.format(config['model']['shell_family_id'], config['model']['feature_extractor_model']))
+    app.logger.info('Input shell_family_id not found! Creating new model with shell_family_id={} and preprocessor={}'.format(config['model']['shell_family_id'], config['model']['feature_extractor_model']))
+    app.logger.info('Inserting shell family with shell_family_id={} and feature_extractor_model={} into database'.format(config['model']['shell_family_id'], config['model']['feature_extractor_model']))
     shell_family_database_entry = create_shell_family(db,
                                                       config['model']['shell_family_id'],
                                                       config['model']['feature_extractor_model'],
                                                       shell_family.instances,
                                                       shell_family.mapping,
                                                       shell_family.global_mean)
+    get_shell_family_result = get_shell_family_by_shell_family_id(db, config['model']['shell_family_id'])
 else:
     app.logger.info('Found saved shell family with shell_family_id: {}'.format(config['model']['shell_family_id']))
     app.logger.info('Loading model with shell_family_id: {}'.format(config['model']['shell_family_id']))
-    shell_family.shell_family_id = get_shell_family_result.shell_family_id
-    shell_family.feature_extractor_model = get_shell_family_result.feature_extractor_model
-    shell_family.create_preprocessor(shell_family.feature_extractor_model)
-    shell_family.instances = get_shell_family_result.instances
-    shell_family.mapping = get_shell_family_result.mapping
-    shell_family.global_mean = (get_shell_family_result.global_mean if get_shell_family_result.global_mean is None else pickle.loads(get_shell_family_result.global_mean))
-    shell_family.updated_at = get_shell_family_result.updated_at
-    # Extract shells from database baased on shell_family_id
-    get_shell_family_shells_database_results = get_all_shells_by_shell_family_id(db, config['model']['shell_family_id'])
-    if get_shell_family_shells_database_results:
-        # Get all shell ids and query
-        for shell_details in get_shell_family_shells_database_results:
-            shell_family.classifiers[shell_details.shell_id] = shell_v2.ShellModel()
-            shell_family.classifiers[shell_details.shell_id].shell_id = shell_details.shell_id
-            shell_family.classifiers[shell_details.shell_id].shell_mean = (shell_details.shell_mean if shell_details.shell_mean is None else pickle.loads(shell_details.shell_mean))
-            shell_family.classifiers[shell_details.shell_id].num_instances = shell_details.num_instances
-            shell_family.classifiers[shell_details.shell_id].noise_mean = shell_details.noise_mean
-            shell_family.classifiers[shell_details.shell_id].noise_std = shell_details.noise_std
-            shell_family.classifiers[shell_details.shell_id].created_at = shell_details.created_at
-            shell_family.classifiers[shell_details.shell_id].updated_at = shell_details.updated_at
-    app.logger.info('Model Loaded!')
+shell_family.shell_family_id = get_shell_family_result.shell_family_id
+shell_family.feature_extractor_model = get_shell_family_result.feature_extractor_model
+shell_family.create_preprocessor(shell_family.feature_extractor_model)
+shell_family.instances = get_shell_family_result.instances
+shell_family.mapping = get_shell_family_result.mapping
+shell_family.global_mean = (get_shell_family_result.global_mean if get_shell_family_result.global_mean is None else pickle.loads(get_shell_family_result.global_mean))
+shell_family.updated_at = get_shell_family_result.updated_at
+# Extract shells from database baased on shell_family_id
+get_shell_family_shells_database_results = get_all_shells_by_shell_family_id(db, config['model']['shell_family_id'])
+if get_shell_family_shells_database_results:
+    # Get all shell ids and query
+    for shell_details in get_shell_family_shells_database_results:
+        shell_family.classifiers[shell_details.shell_id] = shell_v2.ShellModel()
+        shell_family.classifiers[shell_details.shell_id].shell_id = shell_details.shell_id
+        shell_family.classifiers[shell_details.shell_id].shell_mean = (shell_details.shell_mean if shell_details.shell_mean is None else pickle.loads(shell_details.shell_mean))
+        shell_family.classifiers[shell_details.shell_id].num_instances = shell_details.num_instances
+        shell_family.classifiers[shell_details.shell_id].noise_mean = shell_details.noise_mean
+        shell_family.classifiers[shell_details.shell_id].noise_std = shell_details.noise_std
+        shell_family.classifiers[shell_details.shell_id].created_at = shell_details.created_at
+        shell_family.classifiers[shell_details.shell_id].updated_at = shell_details.updated_at
+app.logger.info('Model Loaded!')
 # Close database
 db.close()
 
-
-# if config['model']['model_path'] is None:
-#     app.logger.info('Creating new model with the following preprocessor: {}'.format(config['model']['feature_extractor_model']))
-#     shell_family.create_preprocessor(config['model']['feature_extractor_model'])
-# else:
-#     if os.path.exists(config['model']['model_path']):
-#         app.logger.info('Found saved shell family with filepath: {}'.format(config['model']['model_path']))
-#         app.logger.info('Loading new model with filepath: {}'.format(config['model']['model_path']))
-
-#         shell_family.load(config['model']['model_path'])
-#         app.logger.info('Model Loaded!')
-#     else:
-#         app.logger.info('Incorrect filepath specified! Loading model with the following preprocessor: {}'.format(config['model']['feature_extractor_model']))
-#         shell_family.create_preprocessor(config['model']['feature_extractor_model'])
 app.logger.info('App is ready to use!')
 app.logger.info('')
 # Log config summary

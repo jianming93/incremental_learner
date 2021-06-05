@@ -96,11 +96,12 @@ def update_shells_in_database():
                         shell_has_updated = True
                         update_shell_images_results =\
                             update_all_shell_images_by_shell_family_id_and_shell_id_with_no_image_features(db,
-                                                                                                        shell_family.shell_family_id,
-                                                                                                        shell_details.shell_id,
-                                                                                                        shell_family,
-                                                                                                        config['model']['target_size'],
-                                                                                                        update_datetime)
+                                                                                                           shell_family.shell_family_id,
+                                                                                                           shell_details.shell_id,
+                                                                                                           shell_family,
+                                                                                                           config['model']['batch_size'],
+                                                                                                           config['model']['target_size'],
+                                                                                                           update_datetime)
                     # Step 7: Perform additional check to see if classification module has updates to database
                     # This is done by checking for latest timestamp to determine if there is an update
                     latest_shell_image_for_current_shell_result = get_latest_shell_image_by_shell_family_id_and_shell_id(db, shell_family.shell_family_id, shell_details.shell_id)

@@ -17,7 +17,7 @@ task_app_environment:
 database:
   username: mitb
   password: mitb-il-2021
-  host: postgresql
+  host: localhost
   port: 5432
   database_name: incremental_learner
 
