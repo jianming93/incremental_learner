@@ -177,4 +177,4 @@ As mentioned, there are 4 tables present in the this system. The schemas for the
   - assigned_at (datetime/timestamp): Datetime this image path was assigned to the shell_id for the shell_family_id.
 
 ## 7. Credits
-(TBC)
+Thank you very much Prof Daniel Lin for the guidance throughout this project!
