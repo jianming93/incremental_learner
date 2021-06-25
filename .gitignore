@@ -1,3 +1,8 @@
 images/
 data/
+logs/
 *.docx
+*.doc
+models/
+*/.ipynb_checkpoints/
+*/__pycache__/
