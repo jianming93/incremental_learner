@@ -1,5 +1,15 @@
 # MITB Incremental Learner Capstone Project
 
+## **UPDATE**
+Admin function has been added. Simply add the path '/admin' to go to the admin page. New function are as follows:
+1) Authentication has been added for '/admin' and 'remove-class'. To change the username/password pair, simply go to server.py and edit the variable **VALID_USERNAME_PASSWORD_PAIRS**.
+
+2) Added admin page. Main function for now allows easy reset of shell_family for the current shell_family_id. Uploaded images **will not be deleted**. However, all associated images to the shells and the shell family for the shell_family_id will be removed from the database. 'images' table will not have any edits too.
+
+3) Added increased instances and state tracking for task_app. This is to facilitate api request to perform certain task from dash to the task_app. 
+
+
+
 ## 1. Overview
 This is a project from SMU MITB to build an incremental learner system. The idea is to have a system where it can be quickly updated and also be expanded upon the original classes easily.
 
@@ -69,7 +79,7 @@ task_app_environment:
   - debug: To run task-app application in debug mode.
   - use_cpu: To expose GPU or not for tensorflow's model inference.
   - seconds_interval: How many sceonds to execute update model task.
-  log_filepath: Path to store log file for task-app application.
+  - log_filepath: Path to store log file for task-app application.
 
 database:
   - username: Database server username (Higly recommended to encrypt this properly).

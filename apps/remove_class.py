@@ -8,12 +8,78 @@ from server import app, shell_family
 from sql_app.crud import delete_all_shell_images_by_shell_family_id_and_shell_id, delete_shell_for_shell_family
 from sql_app.database import SessionLocal, engine
 
+def load_auth_layout():
+    username_input = dbc.FormGroup(
+        [
+            dbc.Label("Username", html_for="auth-username-row", width=2),
+            dbc.Col(
+                dbc.Input(
+                    type="text", id="auth-username-row", placeholder="Enter username"
+                ),
+                width=10,
+            ),
+        ],
+        row=True,
+    )
+    password_input = dbc.FormGroup(
+        [
+            dbc.Label("Password", html_for="auth-password-row", width=2),
+            dbc.Col(
+                dbc.Input(
+                    type="password",
+                    id="auth-password-row",
+                    placeholder="Enter password",
+                ),
+                width=10,
+            ),
+        ],
+        row=True,
+    )
+    modal = dbc.Modal(
+        [
+            dbc.ModalHeader("Please enter username and password to access this page."),
+            dbc.ModalBody(
+                [
+                    username_input,
+                    password_input,
+                    dbc.Alert("Invalid username or password! Please try again!",
+                              color="danger",
+                              id="auth-fail-alert",
+                              dismissable=False,
+                              is_open=False),
+                ]
+            ),
+            dbc.ModalFooter(
+                [
+                    dbc.Button("Return to home", id="auth-modal-return-to-home", className="ml-auto", color="secondary"),
+                    dbc.Button("Login", id="auth-modal-login", color="primary"),
+                ]
+            ),
+            
+        ],
+        id="auth-modal",
+        backdrop="static",
+        is_open=True,
+        size='md'
+    )
+
+    layout = [
+        modal,
+        dbc.Container(
+            id='remove-class-main-container',
+            className="pt-3 pb-3",
+        )
+    ]
+        
+    return layout
+
+
 def load_layout():
     help_modal = dbc.Modal(
         [
             dbc.ModalHeader("How to remove class"),
             dbc.ModalBody("Select a class from the dropdown below. Once selected, click the Remove class button "
-                        "A prompt will ask for confirmation before deletion occurs"),
+                          "A prompt will ask for confirmation before deletion occurs"),
             dbc.ModalFooter(
                 [
                     dbc.Button("Close", id="remove-class-help-modal-close-button", className="ml-auto", color='primary')
@@ -39,75 +105,112 @@ def load_layout():
     )
 
 
-    layout = dbc.Container(
-        [   
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.H1("Remove Class", className="d-flex justify-content-start"),
-                        ]
-                    ),
-                ],
-                className="pt-2 pb-2"
-            ),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.Div(
-                                [
-                                    html.H5("Select class to remove", className="d-inline justify-content-start"),
-                                    html.A(
-                                        [
-                                            html.Img(id="remove-class-help-img", src='assets/question-mark-inside-a-circle-svgrepo-com.svg')
-                                        ],
-                                        id="remove-class-help-button",
-                                        className="d-inline"
-                                    ),
-                                ],
-                                className="d-flex justify-content-start"
-                            ),
-                            dbc.Select(
-                                id="remove-class-select-class-to-remove",
-                                options=[{"label": i, "value": i} for i in shell_family.classifiers.keys()]
-                            )
-                        ]
-                    ),
-                ],
-                className="pt-2 pb-2"
-            ),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            dbc.Button("Remove Class", color="primary", className="mr-1", id="remove-class-btn", n_clicks=0),
-                        ]
-                    )
-                ],
-                className="pt-2 pb-2"
-            ),
-            modal,
-            html.Br(),
-            dbc.Alert("Successfully removed class!",
-                    color="success",
-                    id="remove-class-success-alert",
-                    dismissable=True,
-                    duration=5000,
-                    is_open=False),
-            dbc.Alert("Failed to remove class! Please check inputs or contact administrator!",
-                    color="danger",
-                    id="remove-class-fail-alert",
-                    dismissable=True,
-                    duration=5000,
-                    is_open=False),
-            help_modal,
-            
-        ], 
-        id="add-class-main-container",
-        className="pt-3 pb-3",
-    )
+    layout = [
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.H1("Remove Class", className="d-flex justify-content-start"),
+                    ]
+                ),
+            ],
+            className="pt-2 pb-2"
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        html.Div(
+                            [
+                                html.H5("Select class to remove", className="d-inline justify-content-start"),
+                                html.A(
+                                    [
+                                        html.Img(id="remove-class-help-img", src='assets/question-mark-inside-a-circle-svgrepo-com.svg')
+                                    ],
+                                    id="remove-class-help-button",
+                                    className="d-inline"
+                                ),
+                            ],
+                            className="d-flex justify-content-start"
+                        ),
+                        dbc.Select(
+                            id="remove-class-select-class-to-remove",
+                            options=[{"label": i, "value": i} for i in shell_family.classifiers.keys()]
+                        )
+                    ]
+                ),
+            ],
+            className="pt-2 pb-2"
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dbc.Button("Remove Class", color="primary", className="mr-1", id="remove-class-btn", n_clicks=0),
+                    ]
+                )
+            ],
+            className="pt-2 pb-2"
+        ),
+        modal,
+        html.Br(),
+        dbc.Alert("Successfully removed class!",
+                color="success",
+                id="remove-class-success-alert",
+                dismissable=True,
+                duration=5000,
+                is_open=False),
+        dbc.Alert("Failed to remove class! Please check inputs or contact administrator!",
+                  color="danger",
+                  id="remove-class-fail-alert",
+                  dismissable=True,
+                  duration=5000,
+                  is_open=False),
+        help_modal,   
+    ]
+
     return layout
+
+
+# @app.callback(
+#     [   
+#         Output('remove-class-main-container', 'children'),
+#         Output('admin-main-container', 'children'),
+#         Output('auth-modal', 'is_open'),
+#         Output('auth-fail-alert', 'is_open')
+#     ],
+#     [
+#         Input('auth-modal-login', 'n_clicks')
+#     ],
+#     [
+#         State('auth-username-row', 'value'),
+#         State('auth-password-row', 'value')
+#     ]
+# )
+# def auth_verification(n_clicks, username, password):
+#     if n_clicks > 0:
+#         if username in VALID_USERNAME_PASSWORD_PAIRS:
+#             if password == VALID_USERNAME_PASSWORD_PAIRS[username]:
+#                 return load_layout(), False, False
+#             else:
+#                 return None, True, True
+#         else:
+#             return None, True, True
+#     else:
+#         return None, True, False
+
+
+# @app.callback(
+#     Output('url', 'pathname'),
+#     [
+#         Input('auth-modal-return-to-home', 'n_clicks')
+#     ]
+# )
+# def return_to_home_auth(n_clicks):
+#     if n_clicks > 0:
+#         return '/home'
+
+
 
 
 @app.callback(

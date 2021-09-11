@@ -13,6 +13,11 @@ from sql_app import crud, models, schemas
 from sql_app.database import SessionLocal, engine
 from sql_app.crud import get_shell_family_by_shell_family_id, create_shell_family, get_all_shells_by_shell_family_id 
 
+######################################
+# Added Auth For Specific Users Only #
+######################################
+VALID_USERNAME_PASSWORD_PAIRS = {"mitb-il-admin": "incremental-learner"}
+
 # Connect to database
 models.Base.metadata.create_all(bind=engine)
 

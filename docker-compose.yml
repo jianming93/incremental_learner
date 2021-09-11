@@ -1,54 +1,54 @@
 version: '2'
 
 networks:
-    app-tier:
-      driver: bridge
+  app-tier:
+    driver: bridge
 
 services:
-  nginx-proxy:
-    container_name: nginx-proxy
-    image: jwilder/nginx-proxy
+  # nginx-proxy:
+  #   container_name: nginx-proxy
+  #   image: jwilder/nginx-proxy
+  #   ports:
+  #       - '80:80'
+  #   volumes:
+  #       # - /var/run/docker.sock:/tmp/docker.sock.ro
+  #       - ./nginx/nginx-proxy.conf:/etc/nginx/conf.d/nginx-proxy.conf
+  #       - ./nginx/network_internal.conf:/etc/nginx/network_internal.conf
+  #       # - ./nginx/.htpasswd:/etc/nginx/.htpasswd
+  #   networks:
+  #       - app-tier
+
+  dash:
+    container_name: dash
+    build:
+      context: .
+      dockerfile: dockerfiles/dash_app.Dockerfile
+    depends_on: 
+      postgresql:
+        condition: service_healthy
     ports:
-        - '80:80'
-    volumes:
-        # - /var/run/docker.sock:/tmp/docker.sock.ro
-        - ./nginx/nginx-proxy.conf:/etc/nginx/conf.d/nginx-proxy.conf
-        - ./nginx/network_internal.conf:/etc/nginx/network_internal.conf
-        # - ./nginx/.htpasswd:/etc/nginx/.htpasswd
+        - '8000:8000'
     networks:
         - app-tier
+    volumes:
+        - ./images:/app/images
+        - ./logs:/app/logs
 
-  # dash:
-  #   container_name: dash
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfiles/dash_app.Dockerfile
-  #   depends_on: 
-  #     postgresql:
-  #       condition: service_healthy
-  #   ports:
-  #       - '8000:8000'
-  #   networks:
-  #       - app-tier
-  #   volumes:
-  #       - ./images:/app/images
-  #       - ./logs:/app/logs
-
-  # task-app:
-  #   container_name: task-app
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfiles/task_app.Dockerfile
-  #   depends_on: 
-  #     postgresql:
-  #       condition: service_healthy
-  #   ports:
-  #       - '7000:7000'
-  #   networks:
-  #       - app-tier
-  #   volumes:
-  #     - ./images:/app/images
-  #     - ./logs:/app/logs
+  task-app:
+    container_name: task-app
+    build:
+      context: .
+      dockerfile: dockerfiles/task_app.Dockerfile
+    depends_on: 
+      postgresql:
+        condition: service_healthy
+    ports:
+        - '7000:7000'
+    networks:
+        - app-tier
+    volumes:
+      - ./images:/app/images
+      - ./logs:/app/logs
 
 
   postgresql:
@@ -74,17 +74,17 @@ services:
     container_name: pgadmin
     image: dpage/pgadmin4
     ports:
-        - '9000:80'
+      - '9000:80'
     networks:
-        - app-tier
+      - app-tier
     environment:
-        - 'PGADMIN_DEFAULT_EMAIL=jianming.ng.2019@mitb.smu.edu.sg'
-        - 'PGADMIN_DEFAULT_PASSWORD=mitb-il-2021'
+      - 'PGADMIN_DEFAULT_EMAIL=jianming.ng.2019@mitb.smu.edu.sg'
+      - 'PGADMIN_DEFAULT_PASSWORD=mitb-il-2021'
 
 volumes:
-    images:
-        driver: local
-    logs:
-        driver: local
-    postgresql_data:
-        driver: local
+  images:
+      driver: local
+  logs:
+      driver: local
+  postgresql_data:
+      driver: local

@@ -85,7 +85,10 @@ layout = dbc.Container(
                     [
                         html.H5("Uploaded Image", className="d-flex justify-content-start"),
                         dcc.Loading(
-                            html.Img(src="", id="classification-upload-image"),
+                            [
+                                html.Img(src="", id="classification-upload-image"),
+                                html.H5(id="classification-upload-class-prediction-name")
+                            ],
                             id="classification-upload-image-loader",
                             type="default",
                             parent_className="loader"
@@ -127,7 +130,9 @@ layout = dbc.Container(
 
 
 @app.callback(
-    [Output('classification-upload-image', 'src'),
+    [
+     Output('classification-upload-image', 'src'),
+     Output('classification-upload-class-prediction-name', 'children'),
      Output('classification-output-results-table', 'data'),
      Output('classification-fail-alert', 'is_open')],
     [
@@ -178,13 +183,14 @@ def generate_uploaded_zip_file_summary(content, name, date):
             create_shell_images_result = create_shell_images(db, shell_family.shell_family_id, sorted_class_names[0], save_path, pickle.dumps(sample_features[0]), datetime.datetime.utcnow())
             db.close()
             app.logger.info('Successfully perform classification!')
-            return content, output_results, False
+            closest_match_name = "Closest Match: {}".format(sorted_class_names[0])
+            return content, closest_match_name, output_results, False
         except Exception as e:
             app.logger.info(e)
             app.logger.info('Error in performing classification!')
-            return None, None, True
+            return None, None, None, True
     else:
-        return None, None, False
+        return None, None, None, False
 
 
 @app.callback(

@@ -25,3 +25,11 @@
 .dash-spinner-container {
     opacity: 0.8;
 }
+
+.update-toast {
+    position: fixed;
+    /* top: 66 positions the toast below the navbar */
+    top: 66px;
+    right: 10px;
+    width: 400px;
+}

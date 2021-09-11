@@ -25,7 +25,13 @@ from sql_app.crud import (get_shell_families,
                           get_all_shell_images_by_shell_family_id_and_shell_id_with_no_image_features,
                           update_shell_family,
                           update_shell_for_shell_family,
-                          update_all_shell_images_by_shell_family_id_and_shell_id_with_no_image_features)
+                          update_all_shell_images_by_shell_family_id_and_shell_id_with_no_image_features,
+                          delete_shell_family,
+                          delete_shell_for_shell_family,
+                          delete_all_shell_images_by_shell_family_id_and_shell_id,
+                          delete_image)
+### State dict to determine what operation to perform ###
+STATE_DICT = {"state": "update"}
 ### Load Config ###
 with open('config.yaml') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
@@ -41,6 +47,92 @@ if not os.path.isfile(config['task_app_environment']['log_filepath']):
 handler = logging.FileHandler(config['task_app_environment']['log_filepath'])
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 handler.setFormatter(formatter)
+
+def perform_task_by_state():
+    if STATE_DICT['state'] == "shell_family_reset":
+        STATE_DICT['state'] = "shell_family_reset_in_progress"
+        reset_shell_family_database_state()
+        # Always reset back to update state after triggering any kind of reset
+        STATE_DICT['state'] = "update"
+    elif STATE_DICT['state'] == "shell_family_reset_in_progress":
+        # Log as information to indicate reset is already ongoing
+        app.logger.info('Shell Family reset already in progress!')
+    elif STATE_DICT['state'] == "full_reset":
+        STATE_DICT['state'] = "full_reset_in_progress"
+        full_reset_database_state()
+        # Always reset back to update state after triggering any kind of reset
+        STATE_DICT['state'] = "update"
+    elif STATE_DICT['state'] == "full_reset_in_progress":
+        # Log as information to indicate reset is already ongoing
+        app.logger.info('Full reset already in progress!')
+    elif STATE_DICT['state'] == "update":
+        STATE_DICT['state'] = "update_in_progress"
+        update_shells_in_database()
+        STATE_DICT['state'] = "update"
+    elif STATE_DICT['state'] == "update_in_progress":
+        app.logger.info('Shell Family update already in progress!')
+
+
+
+def reset_shell_family_database_state():
+    db = SessionLocal()
+    try:
+        app.logger.info('Full reset triggered! Resetting all tables and recreating empty shell family for shell_family_id={}'.format(config['model']['shell_family_id']))
+        all_shells_for_shell_family_id = get_all_shells_by_shell_family_id(db, config['model']['shell_family_id'])
+        for shell_details in all_shells_for_shell_family_id:
+            shell = shell_details.shell_id
+            delete_all_shell_images_by_shell_family_id_and_shell_id(db, config['model']['shell_family_id'], shell)
+            delete_shell_for_shell_family(db, config['model']['shell_family_id'], shell)
+        delete_shell_family(db, config['model']['shell_family_id'])
+        app.logger.info('Successfully deleted all shells and records for shell_family_id: {}'.format(config['model']['shell_family_id']))
+        # Recreate new learner with id same as previous
+        app.logger.info('Recreating shell family as new record for shell_family_id: {}'.format(config['model']['shell_family_id']))
+        recreated_shell_family = ShellFamily()
+        shell_family_database_entry = create_shell_family(db,
+                                                          config['model']['shell_family_id'],
+                                                          config['model']['feature_extractor_model'],
+                                                          recreated_shell_family.instances,
+                                                          recreated_shell_family.mapping,
+                                                          recreated_shell_family.global_mean)
+        app.logger.info('Successfully recreated shell family as new record for shell_family_id: {}'.format(config['model']['shell_family_id']))
+        app.logger.info('Successfully executed shell family reset!')
+    except Exception as e:
+        app.logger.info(e)
+        app.logger.info('Shell family reset has failed!')
+    finally:
+        db.close()
+
+
+def full_reset_database_state():
+    ### TODO: Create a full reset function ###
+    pass
+    # db = SessionLocal()
+    # try:
+    #     app.logger.info('Shell family reset triggered! Starting reset for shell_family_id: {}'.format(config['model']['shell_family_id']))
+    #     all_shells_for_shell_family_id = get_all_shells_by_shell_family_id(db, config['model']['shell_family_id'])
+    #     for shell_details in all_shells_for_shell_family_id:
+    #         shell = shell_details.shell_id
+    #         delete_all_shell_images_by_shell_family_id_and_shell_id(db, config['model']['shell_family_id'], shell)
+    #         delete_shell_for_shell_family(db, config['model']['shell_family_id'], shell)
+    #     delete_shell_family(db, config['model']['shell_family_id'])
+    #     app.logger.info('Successfully deleted all shells and records for shell_family_id: {}'.format(config['model']['shell_family_id']))
+    #     # Recreate new learner with id same as previous
+    #     app.logger.info('Recreating shell family as new record for shell_family_id: {}'.format(config['model']['shell_family_id']))
+    #     recreated_shell_family = ShellFamily()
+    #     shell_family_database_entry = create_shell_family(db,
+    #                                                       config['model']['shell_family_id'],
+    #                                                       config['model']['feature_extractor_model'],
+    #                                                       recreated_shell_family.instances,
+    #                                                       recreated_shell_family.mapping,
+    #                                                       recreated_shell_family.global_mean)
+    #     app.logger.info('Successfully recreated shell family as new record for shell_family_id: {}'.format(config['model']['shell_family_id']))
+    #     app.logger.info('Successfully executed shell family reset!')
+    # except Exception as e:
+    #     app.logger.info(e)
+    #     app.logger.info('Shell family reset has failed!')
+    # finally:
+    #     db.close()
+
 
 def update_shells_in_database():
     db = SessionLocal()
@@ -181,20 +273,31 @@ def update_shells_in_database():
         tf.keras.backend.clear_session()
 
 
+job_defaults = {
+    'coalesce': config['task_app_environment']['coalesce'],
+    'max_instances': config['task_app_environment']['max_instances']
+}
+
+
 ### Create Scheduler ###
-sched = BackgroundScheduler(daemon=True)
+sched = BackgroundScheduler(daemon=True, job_defaults=job_defaults)
 ### Add jobs for scheduler ###
-sched.add_job(update_shells_in_database,'interval', seconds=config['task_app_environment']['seconds_interval'])
+sched.add_job(perform_task_by_state,'interval', seconds=config['task_app_environment']['seconds_interval'])
 ### Start Scheduler ###
 sched.start()
 
 app = Flask(__name__)
 app.logger.addHandler(handler)
 
-@app.route("/test")
+@app.route("/test", methods=["GET"])
 def test():
     """ Function for test purposes. """
     return "This is a test response"
+
+@app.route('/shell_family_reset', methods=["GET"])
+def set_shell_family_reset_state():
+    STATE_DICT['state'] = 'shell_family_reset'
+    return "Shell family reset request successful!"
 
 atexit.register(lambda: sched.shutdown(wait=False))
 

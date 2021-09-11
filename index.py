@@ -5,23 +5,95 @@ from dash_bootstrap_components._components.NavLink import NavLink
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 from src import shell_v2
-from server import app, config, shell_family
-from apps import home, classification, add_class, remove_class, error
+from server import app, config, shell_family, VALID_USERNAME_PASSWORD_PAIRS
+from apps import home, classification, add_class, remove_class, error, admin
 from sql_app.database import SessionLocal, engine
-from sql_app.crud import get_shell_family_by_shell_family_id, create_shell_family, get_all_shells_by_shell_family_id 
+from sql_app.crud import get_shell_family_by_shell_family_id, create_shell_family, get_all_shells_by_shell_family_id
 
+def load_auth_layout(pathname):
+    if pathname == "/remove-class":
+        container_name = 'remove-class'
+    elif pathname == "/admin":
+        container_name = 'admin'
+    else:
+        raise ValueError('Incorrect path speicified!')
+    username_input = dbc.FormGroup(
+        [
+            dbc.Label("Username", html_for="auth-username-row", width=2),
+            dbc.Col(
+                dbc.Input(
+                    type="text", id="auth-username-row", placeholder="Enter username"
+                ),
+                width=10,
+            ),
+        ],
+        row=True,
+    )
+    password_input = dbc.FormGroup(
+        [
+            dbc.Label("Password", html_for="auth-password-row", width=2),
+            dbc.Col(
+                dbc.Input(
+                    type="password",
+                    id="auth-password-row",
+                    placeholder="Enter password",
+                ),
+                width=10,
+            ),
+        ],
+        row=True,
+    )
+    modal = dbc.Modal(
+        [
+            dbc.ModalHeader("Please enter username and password to access this page."),
+            dbc.ModalBody(
+                [
+                    username_input,
+                    password_input,
+                    dbc.Alert("Invalid username or password! Please try again!",
+                              color="danger",
+                              id="auth-fail-alert",
+                              dismissable=False,
+                              is_open=False),
+                ]
+            ),
+            dbc.ModalFooter(
+                [
+                    dbc.Button("Return to home", id="auth-modal-return-to-home", className="ml-auto", color="secondary", n_clicks=0),
+                    dbc.Button("Login", id="auth-modal-login", color="primary"),
+                ]
+            ),
+            
+        ],
+        id="auth-modal",
+        backdrop="static",
+        is_open=True,
+        size='md'
+    )
 
-PLOTLY_LOGO = "https://images.plot.ly/logo/new-branding/plotly-logomark.png"
+    layout = [
+        modal,
+        dbc.Input(id="auth-pathname-input", type="text", value=container_name, className="d-none"),
+        dbc.Container(
+            id='remove-class-main-container',
+            className="pt-3 pb-3",
+        ),
+        dbc.Container(
+            id='admin-main-container',
+            className="pt-3 pb-3",
+        )
+    ]
+    return layout
 
 navbar = dbc.NavbarSimple(
-    [   
+    [
         dbc.NavItem(dbc.NavLink("Home", href="/home")),
         dbc.DropdownMenu(
             children=[
-                # dbc.DropdownMenuItem("More pages", header=True),
                 dbc.DropdownMenuItem("Classification", href="classification"),
                 dbc.DropdownMenuItem("Add Class", href="add-class"),
                 dbc.DropdownMenuItem("Remove Class", href="remove-class"),
@@ -43,6 +115,9 @@ app.layout = dbc.Container(
         navbar,
         dcc.Location(id='url', refresh=False),
         dcc.Interval(id="shell-family-update-interval", interval=5000),
+        # update_found_toast,
+        # update_success_toast,
+        # update_failed_toast,
         html.Div(id='page-content', className="page-content")
     ],
     fluid=True,
@@ -65,9 +140,57 @@ def display_page(pathname):
     elif pathname == '/remove-class':
         # Remove class is special as it is dependent on the shell_classifier's state on first render
         # Hence, need to call a function to re-generate it whenever it is navigated to that page.
-        return ("fixed-top", remove_class.load_layout(), 'page-content mt-5')
+        return ("fixed-top", load_auth_layout(pathname), 'page-content mt-5')
+    elif pathname == "/admin":
+        return ("fixed-top", load_auth_layout(pathname), 'page-content mt-5')
     else:
         return ("fixed-top", error.layout, 'page-content mt-5')
+
+
+@app.callback(
+    [   
+        Output('remove-class-main-container', 'children'),
+        Output('admin-main-container', 'children'),
+        Output('auth-modal', 'is_open'),
+        Output('auth-fail-alert', 'is_open')
+    ],
+    [
+        Input('auth-modal-login', 'n_clicks')
+    ],
+    [
+        State('auth-username-row', 'value'),
+        State('auth-password-row', 'value'),
+        State('auth-pathname-input', 'value')
+    ]
+)
+def auth_verification(n_clicks, username, password, pathname):
+    if n_clicks > 0:
+        if username in VALID_USERNAME_PASSWORD_PAIRS:
+            if password == VALID_USERNAME_PASSWORD_PAIRS[username]:
+                if pathname == "remove-class":
+                    return remove_class.load_layout(), None, False, False
+                elif pathname == "admin":
+                    return None, admin.load_layout(), False, False
+            else:
+                return None, None, True, True
+        else:
+            return None, None, True, True
+    else:
+        return None, None, True, False
+
+
+@app.callback(
+    Output('url', 'pathname'),
+    [
+        Input('auth-modal-return-to-home', 'n_clicks')
+    ]
+)
+def return_to_home_auth(n_clicks):
+    if n_clicks > 0:
+        return '/home'
+    else:
+        raise PreventUpdate
+        
 
 
 @app.callback(Output('shell-family-update-interval', 'disabled'),
