@@ -16,7 +16,7 @@ from sql_app.crud import get_shell_family_by_shell_family_id, create_shell_famil
 ######################################
 # Added Auth For Specific Users Only #
 ######################################
-VALID_USERNAME_PASSWORD_PAIRS = {"mitb-il-admin": "incremental-learner"}
+VALID_USERNAME_PASSWORD_PAIRS = {"mitb-il-admin": "mitb-il-2021"}
 
 # Connect to database
 models.Base.metadata.create_all(bind=engine)
