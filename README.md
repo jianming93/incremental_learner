@@ -8,6 +8,8 @@ Admin function has been added. Simply add the path '/admin' to go to the admin p
 
 3) Added increased instances and state tracking for task_app. This is to facilitate api request to perform certain task from dash to the task_app. 
 
+4) **NEW**: State passing from backend to frontend is implemented! Now a toast will indicate if backend is updating and if update is successful, it will display a success toast. Failure to update will also indicate a failed toast. STATE_DICT at backend is updated to track this logic.
+
 
 
 ## 1. Overview

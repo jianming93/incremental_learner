@@ -5,7 +5,11 @@ dash_environment:
   use_cpu: true
   save_image_directory: images/
   log_filepath: logs/dash_app.log
+  end_state_success_fail_display_duration: 5
   shell_family_reset_api: http://task-app:7000/shell_family_reset
+  backend_state_api: http://task-app:7000/state
+  # shell_family_reset_api: http://localhost:7000/shell_family_reset
+  # backend_state_api: http://localhost:7000/state
 
 task_app_environment:
   host: 0.0.0.0
@@ -21,6 +25,7 @@ database:
   username: mitb
   password: mitb-il-2021
   host: postgresql
+  # host: localhost
   port: 5432
   database_name: incremental_learner
 

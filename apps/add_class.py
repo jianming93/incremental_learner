@@ -81,6 +81,23 @@ layout = dbc.Container(
             ],
             className="pt-2 pb-2"
         ),
+        dcc.Loading(
+            dbc.Alert("Successfully Uploaded",
+                      id='add-class-success-alert',
+                      color="success",
+                      dismissable=True,
+                      duration=5000,
+                      is_open=False),
+            fullscreen=True,
+            type='default',
+            parent_className ="loader"
+        ),
+        dbc.Alert("Upload has failed! Please check inputs!",
+                  id='add-class-fail-alert',
+                  color="danger",
+                  dismissable=True,
+                  duration=5000,
+                  is_open=False),
         dbc.Row(
             [
                 dbc.Col(
@@ -123,23 +140,6 @@ layout = dbc.Container(
             className="pt-2 pb-2"
         ),
         html.Br(),
-        dcc.Loading(
-            dbc.Alert("Successfully Uploaded",
-                      id='add-class-success-alert',
-                      color="success",
-                      dismissable=True,
-                      duration=5000,
-                      is_open=False),
-            fullscreen=True,
-            type='default',
-            parent_className ="loader"
-        ),
-        dbc.Alert("Upload has failed! Please check inputs!",
-                  id='add-class-fail-alert',
-                  color="danger",
-                  dismissable=True,
-                  duration=5000,
-                  is_open=False),
         help_modal,
         
     ], 

@@ -31,7 +31,11 @@ from sql_app.crud import (get_shell_families,
                           delete_all_shell_images_by_shell_family_id_and_shell_id,
                           delete_image)
 ### State dict to determine what operation to perform ###
-STATE_DICT = {"state": "update"}
+# State is to indicate what the task_app is doing.
+# changes_found is to indicate if during update in progress or reset in progress, a change is detected
+# this is because there are times where update is in progress for the task_app but no changes are found
+# which means shell_family's state has no updates.
+STATE_DICT = {"state": "update", "changes_found": False}
 ### Load Config ###
 with open('config.yaml') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
@@ -183,6 +187,9 @@ def update_shells_in_database():
                     null_shell_images_results = get_all_shell_images_by_shell_family_id_and_shell_id_with_no_image_features(db, shell_family.shell_family_id, shell_details.shell_id)
                     if null_shell_images_results:
                         app.logger.info('Found new images for shell_id={} for Shell Family with shell_family_id={}'.format(shell_details.shell_id, shell_family_details.shell_family_id))
+                        # Step 5.5: Update STATE_DICT to indicate changes found
+                        if not STATE_DICT['changes_found']:
+                            STATE_DICT['changes_found'] = True
                         # Step 6: Update all images with no image features with regards to shell_family_id and shell_id
                         update_datetime = datetime.datetime.utcnow()
                         shell_has_updated = True
@@ -222,6 +229,9 @@ def update_shells_in_database():
                 shell_family_classes = list(shell_family.mapping)
                 shell_family_classes.sort()
                 if shell_image_classes != shell_family_classes:
+                    # Step 9.5: Update STATE_DICT to indicate changes found
+                    if not STATE_DICT['changes_found']:
+                        STATE_DICT['changes_found'] = True
                     shell_has_updated = True
                     shell_has_been_deleted = True
                     update_datetime = datetime.datetime.utcnow()
@@ -271,6 +281,8 @@ def update_shells_in_database():
     finally:
         db.close()
         tf.keras.backend.clear_session()
+        # Reset STATE_DICT changes found to be back to False
+        STATE_DICT['changes_found'] = False
 
 
 job_defaults = {
@@ -298,6 +310,10 @@ def test():
 def set_shell_family_reset_state():
     STATE_DICT['state'] = 'shell_family_reset'
     return "Shell family reset request successful!"
+
+@app.route('/state', methods=["GET"])
+def get_state():
+    return STATE_DICT
 
 atexit.register(lambda: sched.shutdown(wait=False))
 
