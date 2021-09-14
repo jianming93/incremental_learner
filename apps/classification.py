@@ -20,7 +20,7 @@ from sql_app.database import SessionLocal, engine
 
 help_modal = dbc.Modal(
     [
-        dbc.ModalHeader("How to perform classification"),
+        dbc.ModalHeader("How to perform classification", className="bg-dark text-light"),
         dbc.ModalBody("Upload an image in the upload area. Image will be displayed on the left. "
                       "Results for the classification (which is a distance metric) will be displayed "
                       "on the right side sorted by the closest match."),
@@ -31,6 +31,7 @@ help_modal = dbc.Modal(
         )
     ],
     id="classification-help-modal",
+    size="lg"
 )
 
 
@@ -103,7 +104,11 @@ layout = dbc.Container(
                             dash_table.DataTable(
                                 id='classification-output-results-table',
                                 columns=[{"name": "Class Name", "id": "class-name-column"},
-                                        {"name": "Distance", "id": "distance-column"}],
+                                         {"name": "Distance", "id": "distance-column"}],
+                                style_header={
+                                    'backgroundColor': "#343a40",
+                                    'color': "#f8f9fa",
+                                }
                             ),
                             id="classification-output-results-table-loader",
                             type="default",

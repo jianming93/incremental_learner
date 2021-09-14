@@ -22,7 +22,7 @@ from sql_app.database import SessionLocal, engine
 
 help_modal = dbc.Modal(
     [
-        dbc.ModalHeader("How to add class"),
+        dbc.ModalHeader("How to add class", className="bg-dark text-light"),
         dbc.ModalBody("Upload a zip file containing all the images of the class desired to be part of the model's dataset. "
                       "Verify the correct number of images below before clicking the button at the bottom."),
         dbc.ModalFooter(
@@ -32,6 +32,7 @@ help_modal = dbc.Modal(
         )
     ],
     id="add-class-help-modal",
+    size="lg"
 )
 
 
@@ -118,6 +119,10 @@ layout = dbc.Container(
                                 columns=[{"name": "Class Name", "id": "class-name-column"},
                                          {"name": "Number of images", "id": "number-of-images-column"},
                                          {"name": "Existing Class", "id": "existing-class-column"},],
+                                style_header={
+                                    'backgroundColor': "#343a40",
+                                    'color': "#f8f9fa",
+                                }
                             ),
                             id='add-class-table-loader',
                             type='default',

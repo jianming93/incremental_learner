@@ -33,3 +33,20 @@
     right: 10px;
     width: 400px;
 }
+
+
+#model-summary-tabs li{
+    cursor: pointer;
+}
+
+#model-summary-tabs li a.active{
+    background-color: var(--dark);
+    color: var(--light);
+    font-weight: bold;
+}
+
+
+/* Hide Aa text in legend for plot */
+g.pointtext {
+    display: none;
+}

@@ -10,6 +10,10 @@ Admin function has been added. Simply add the path '/admin' to go to the admin p
 
 4) **NEW**: State passing from backend to frontend is implemented! Now a toast will indicate if backend is updating and if update is successful, it will display a success toast. Failure to update will also indicate a failed toast. STATE_DICT at backend is updated to track this logic.
 
+5) **NEW**: Added "Model Summary" button on the top navbar which will show a modal. This will allow user to see what classes are present for the current shell_family_id along with how many instances are seen by the model. Also, there is another tab within the modal to plot a scatter plot of a PCA shell mean for the shell_family_id. This is to allow users to understand better where the shells are lying in the feature space.
+
+![Model Summary Modal Statistics](docs/model_summary_modal_statistics.JPG)
+![Model Summary Modal Plot](docs/model_summary_modal_plot.JPG)
 
 
 ## 1. Overview

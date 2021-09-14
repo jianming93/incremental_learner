@@ -8,76 +8,11 @@ from server import app, shell_family
 from sql_app.crud import delete_all_shell_images_by_shell_family_id_and_shell_id, delete_shell_for_shell_family
 from sql_app.database import SessionLocal, engine
 
-def load_auth_layout():
-    username_input = dbc.FormGroup(
-        [
-            dbc.Label("Username", html_for="auth-username-row", width=2),
-            dbc.Col(
-                dbc.Input(
-                    type="text", id="auth-username-row", placeholder="Enter username"
-                ),
-                width=10,
-            ),
-        ],
-        row=True,
-    )
-    password_input = dbc.FormGroup(
-        [
-            dbc.Label("Password", html_for="auth-password-row", width=2),
-            dbc.Col(
-                dbc.Input(
-                    type="password",
-                    id="auth-password-row",
-                    placeholder="Enter password",
-                ),
-                width=10,
-            ),
-        ],
-        row=True,
-    )
-    modal = dbc.Modal(
-        [
-            dbc.ModalHeader("Please enter username and password to access this page."),
-            dbc.ModalBody(
-                [
-                    username_input,
-                    password_input,
-                    dbc.Alert("Invalid username or password! Please try again!",
-                              color="danger",
-                              id="auth-fail-alert",
-                              dismissable=False,
-                              is_open=False),
-                ]
-            ),
-            dbc.ModalFooter(
-                [
-                    dbc.Button("Return to home", id="auth-modal-return-to-home", className="ml-auto", color="secondary"),
-                    dbc.Button("Login", id="auth-modal-login", color="primary"),
-                ]
-            ),
-            
-        ],
-        id="auth-modal",
-        backdrop="static",
-        is_open=True,
-        size='md'
-    )
-
-    layout = [
-        modal,
-        dbc.Container(
-            id='remove-class-main-container',
-            className="pt-3 pb-3",
-        )
-    ]
-        
-    return layout
-
 
 def load_layout():
     help_modal = dbc.Modal(
         [
-            dbc.ModalHeader("How to remove class"),
+            dbc.ModalHeader("How to remove class", className="bg-dark text-light"),
             dbc.ModalBody("Select a class from the dropdown below. Once selected, click the Remove class button "
                           "A prompt will ask for confirmation before deletion occurs"),
             dbc.ModalFooter(
@@ -87,12 +22,13 @@ def load_layout():
             )
         ],
         id="remove-class-help-modal",
+        size="lg"
     )
 
 
     modal = dbc.Modal(
         [
-            dbc.ModalHeader("Remove class"),
+            dbc.ModalHeader("Remove class", className="bg-dark text-light"),
             dbc.ModalBody("Are you sure you want to remove these classes? Action is irreversible upon confirmation"),
             dbc.ModalFooter(
                 [
@@ -172,47 +108,6 @@ def load_layout():
     return layout
 
 
-# @app.callback(
-#     [   
-#         Output('remove-class-main-container', 'children'),
-#         Output('admin-main-container', 'children'),
-#         Output('auth-modal', 'is_open'),
-#         Output('auth-fail-alert', 'is_open')
-#     ],
-#     [
-#         Input('auth-modal-login', 'n_clicks')
-#     ],
-#     [
-#         State('auth-username-row', 'value'),
-#         State('auth-password-row', 'value')
-#     ]
-# )
-# def auth_verification(n_clicks, username, password):
-#     if n_clicks > 0:
-#         if username in VALID_USERNAME_PASSWORD_PAIRS:
-#             if password == VALID_USERNAME_PASSWORD_PAIRS[username]:
-#                 return load_layout(), False, False
-#             else:
-#                 return None, True, True
-#         else:
-#             return None, True, True
-#     else:
-#         return None, True, False
-
-
-# @app.callback(
-#     Output('url', 'pathname'),
-#     [
-#         Input('auth-modal-return-to-home', 'n_clicks')
-#     ]
-# )
-# def return_to_home_auth(n_clicks):
-#     if n_clicks > 0:
-#         return '/home'
-
-
-
-
 @app.callback(
     Output('remove-class-confirmation-modal', 'is_open'),
     [
@@ -228,7 +123,6 @@ def open_confirm_remove_class_modal(n_clicks_remove_class, n_clicks_confirm, n_c
     if n_clicks_remove_class or n_clicks_confirm or n_clicks_cancel:
         return not is_open
     return is_open
-    
 
 
 @app.callback(

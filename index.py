@@ -3,9 +3,15 @@ import requests
 import time
 from collections import OrderedDict
 
+from sklearn.decomposition import PCA
+import numpy as np
+import pandas as pd
+import plotly.express as px
 from dash_bootstrap_components._components.NavLink import NavLink
+from dash_bootstrap_components._components.NavItem import NavItem
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -51,7 +57,7 @@ def load_auth_layout(pathname):
     )
     modal = dbc.Modal(
         [
-            dbc.ModalHeader("Please enter username and password to access this page."),
+            dbc.ModalHeader("Please enter username and password to access this page.", className="bg-dark text-light"),
             dbc.ModalBody(
                 [
                     username_input,
@@ -90,6 +96,86 @@ def load_auth_layout(pathname):
         )
     ]
     return layout
+
+
+def generate_model_statistics_table():
+    db = SessionLocal()
+    output = []
+    tab_content = None
+    try:
+        
+        shells_results = get_all_shells_by_shell_family_id(db, config['model']['shell_family_id'])
+        for shell in shells_results:
+            output.append(
+                {
+                    'class-name-column': shell.shell_id,
+                    "number-of-instances-column": shell.num_instances,
+                    'created-at-column': shell.created_at,
+                    'updated-at-column': shell.updated_at
+                }
+            )
+        tab_content = dash_table.DataTable(
+            id='model-statistics-table',
+            columns=[
+                {"name": "Class Name", "id": "class-name-column"},
+                {"name": "Number of Instances", "id": "number-of-instances-column"},
+                {"name": "Created At", "id": "created-at-column"},
+                {"name": "Updated At", "id": "updated-at-column"}
+            ],
+            data=output,
+            style_header={
+                'backgroundColor': "#343a40",
+                'color': "#f8f9fa",
+            }
+        ),
+    except Exception as e:
+        app.logger.info(e)
+        app.logger.info('Failed to retrieve statistics for shell_family_id: {}'.format(config['model']['shell_family_id']))
+        tab_content = html.H5("Unable to retrieve model statistics from database! Please check configuration or contact administrator!")
+    finally:
+        db.close()
+        return tab_content
+
+
+def generate_shell_mean_plot():
+    db = SessionLocal()
+    shell_mean = []
+    shell_classes = []
+    tab_content = None
+    try:
+        shells_results = get_all_shells_by_shell_family_id(db, config['model']['shell_family_id'])
+        for shell in shells_results:
+            shell_mean.append(pickle.loads(shell.shell_mean)[0])
+            shell_classes.append(shell.shell_id)
+        pca = PCA(n_components=2)
+        pca_shell_mean = pca.fit_transform(np.array(shell_mean))
+        pca_df = pd.DataFrame(
+            {
+                "PC1": pca_shell_mean[:, 0],
+                "PC2": pca_shell_mean[:, 1],
+                "class_name": shell_classes
+            }
+        )
+        fig = px.scatter(pca_df, x="PC1", y="PC2", color="class_name", text="class_name", title="PCA shell mean plot")
+        fig.update_layout(clickmode='event+select')
+        fig.update_traces(marker_size=20, textposition="top center")
+
+        tab_content = [
+            html.P("Note: PCA is used to perform dimensionality reduction to produce this plot. "
+                   "It provides a representation to a certain extent on where the shell centers are in the feature space."),
+            dcc.Graph(
+                id='model-shell-mean-scatter-plot',
+                figure=fig
+            ),
+        ]
+    except Exception as e:
+        app.logger.info(e)
+        app.logger.info("Failed to plot model's shell mean PCA scatter plot for shell_family_id: {}".format(config['model']['shell_family_id']))
+        tab_content = html.H5("Unable to plot model's shell mean PCA scatter plot! Please check configuration or contact administrator!")
+    finally:
+        db.close()
+        return tab_content
+
 
 # Custom global variables for showing toast for set duration given callback overwriting state
 # due to interval counting down while update is occuring
@@ -145,9 +231,41 @@ failed_update_toast = dbc.Toast(
     style={"position": "fixed", "bottom": 46, "right": 10, "width": 350, "zIndex": 1050, "border": 0},
 )
 
-navbar = dbc.NavbarSimple(
+
+model_summary_modal = dbc.Modal(
     [
-        dbc.NavItem(dbc.NavLink("Home", href="/home")),
+        dbc.ModalHeader("Model Summary", className="bg-dark text-light"),
+        dbc.ModalBody(
+            [
+                html.H5("Shell Family ID: {}".format(config['model']['shell_family_id'])),
+                dbc.Tabs(
+                    [
+                        dbc.Tab(label="Statistics", tab_id="tab-model-statistics", className="model-summary-modal-tab"),
+                        dbc.Tab(label="Shell Mean Plot", tab_id="tab-model-shell-mean-plot", className="model-summary-modal-tab"),
+                    ],
+                    id="model-summary-tabs",
+                ),
+                dbc.Container(
+                    dcc.Loading(
+                        id="model-summary-tab-contents-loader",
+                        type="default",
+                        parent_className="loader"
+                    ),
+                    id="model-summary-tab-contents",
+                    className="pt-2"
+                )
+            ]
+        ),
+    ],
+    id="model-summary-modal",
+    is_open=False,
+    size="lg"
+)
+
+navbar = dbc.NavbarSimple(
+    [   
+        dbc.Button("Model Summary", id="model-summary-btn", color="primary", n_clicks=0),
+        dbc.NavItem(dbc.NavLink("Home", href="/home"), className="ml-3"),
         dbc.DropdownMenu(
             children=[
                 dbc.DropdownMenuItem("Classification", href="classification"),
@@ -157,6 +275,7 @@ navbar = dbc.NavbarSimple(
             nav=True,
             in_navbar=True,
             label="Navigate",
+            className="ml-3"
         ),
     ],
     color="dark",
@@ -171,13 +290,11 @@ app.layout = dbc.Container(
         navbar,
         dcc.Location(id='url', refresh=False),
         dcc.Interval(id="shell-family-update-interval", interval=5000),
-        # update_found_toast,
-        # update_success_toast,
-        # update_failed_toast,
         html.Div(id='page-content', className="page-content"),
+        model_summary_modal,
         update_in_progress_toast,
         success_update_toast,
-        failed_update_toast
+        failed_update_toast,
     ],
     fluid=True,
     id="main-container",
@@ -352,6 +469,37 @@ def update_shell_family(n_interval):
         app.logger.info("Backend State: {}".format(backend_state))
         app.logger.info("Frontend State: {}".format(FINAL_STATE_DICT))
         return False, FINAL_STATE_DICT['show_update_in_progress'], FINAL_STATE_DICT['show_update_success'], FINAL_STATE_DICT['show_update_failed']
+
+
+@app.callback(
+    Output('model-summary-modal', 'is_open'),
+    [
+        Input('model-summary-btn', 'n_clicks')
+    ]
+)
+def show_model_summary_modal(n_clicks):
+    if n_clicks > 0:
+        return True
+    else:
+        raise PreventUpdate
+
+
+
+@app.callback(
+    Output('model-summary-tab-contents-loader', 'children'),
+    [
+        Input('model-summary-tabs', 'active_tab')
+    ]
+)
+def show_model_summary_tab_contents(active_tab):
+    if active_tab == "tab-model-statistics":
+        return generate_model_statistics_table()
+    elif active_tab == "tab-model-shell-mean-plot":
+        return generate_shell_mean_plot()
+    else:
+        raise PreventUpdate
+
+
 
 
 if __name__ == '__main__':
