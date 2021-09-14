@@ -58,6 +58,17 @@ info_jumbotron = dbc.Jumbotron(
                             className="lead d-flex info-text-content",
                             id="home-page-content-2"
                         ),
+                        html.P(
+                            'Link to the project itself can be found by clicking the button below.',
+                            className="lead d-flex info-text-content",
+                            id="home-page-content-3"
+                        ),
+                        dbc.Button(
+                            "Go to Github",
+                            href="https://github.com/jianming93/incremental_learner",
+                            color="primary",
+                            className="ml-3 mb-3"
+                        )
                     ],
                     id="home-page-info-area",
                 ) 
